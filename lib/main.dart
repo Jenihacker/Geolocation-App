@@ -46,7 +46,7 @@ class MyApp extends StatelessWidget {
             textTheme: const TextTheme(
                 bodySmall: TextStyle(color: Colors.white),
                 bodyMedium: TextStyle(color: Colors.white))),
-        home: const SplashScreen(),
+        home:const SplashScreen(),
       ),
     );
   }
@@ -60,11 +60,8 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  CameraController? controller;
   bool flashlight = false;
   bool isSaving = false;
-  Uint8List? recentImage;
-  late ScreenshotController screenshotcontroller;
   Position place = Position(
       longitude: 0.0,
       latitude: 0.0,
@@ -81,28 +78,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    controller = CameraController(cameras[0], ResolutionPreset.high,
-        imageFormatGroup: ImageFormatGroup.jpeg);
-    //controller.startImageStream((image) => print(image));
-    controller!.initialize().then((_) {
-      if (!mounted) {
-        return;
-      }
-      setState(() {});
-    }).catchError((Object e) {
-      if (e is CameraException) {
-        switch (e.code) {
-          case 'CameraAccessDenied':
-            // Handle access errors here.
-            break;
-          default:
-            // Handle other errors here.
-            break;
-        }
-      }
-    });
-
-    screenshotcontroller = ScreenshotController();
     if (defaultTargetPlatform == TargetPlatform.android) {
       locationSettings = AndroidSettings(
           accuracy: LocationAccuracy.high,
@@ -137,30 +112,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   void dispose() {
-    controller!.dispose();
     super.dispose();
-  }
-
-  Future takePicture() async {
-    if (!controller!.value.isInitialized) {
-      return null;
-    }
-    if (controller!.value.isTakingPicture) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Please Wait...')));
-      return null;
-    }
-    try {
-      screenshotcontroller.capture().then((value) async {
-        setState(() {
-          ImageGallerySaver.saveImage(value!);
-          recentImage = value;
-        });
-      });
-    } on CameraException catch (e) {
-      debugPrint('Error occured while taking picture: $e');
-      return null;
-    }
   }
 
   void launchGallery() async {
@@ -242,259 +194,272 @@ class _HomeScreenState extends State<HomeScreen> {
       backgroundColor: Colors.black,
       body: LayoutBuilder(
         builder: (context, constraints) {
-          return Stack(
-            children: [
-              Positioned(
-                top: 0,
-                left: 0,
-                right: 0,
-                child: Container(
-                  height: 50,
-                  decoration: const BoxDecoration(color: Colors.black),
-                  child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.only(left: 20.0),
-                          child: GestureDetector(
-                              onTap: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                        content: Text('Clicked Flash')));
-                              },
-                              child: const SizedBox(
-                                child: Icon(Icons.flash_off),
-                              )),
-                        ),
-                        Padding(
-                          padding: const EdgeInsets.only(right: 20.0),
-                          child: GestureDetector(
-                            onTap: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                      content: Text('Clicked Menu')));
-                            },
-                            child: const Icon(
-                              Icons.menu,
-                              color: Colors.white,
-                            ),
-                          ),
-                        )
-                      ]),
-                ),
-              ),
-              Positioned.fill(
-                top: 50,
-                //bottom: 0,
-                child: AspectRatio(
-                  aspectRatio: (controller == null)
-                      ? 720 / 1280
-                      : controller!.value.aspectRatio,
-                  child: Screenshot(
-                    controller: screenshotcontroller,
-                    child: controller != null
-                        ? CameraPreview(controller!,
-                            child: FutureBuilder(
-                              future: _determinePosition(),
-                              builder: (context, snapshot) {
-                                return Align(
-                                    alignment: Alignment.bottomLeft,
-                                    child: Container(
-                                        height: 100,
-                                        color: Colors.black54,
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.center,
-                                          children: [
-                                            Container(
-                                              padding: const EdgeInsets.all(5),
-                                              child: Container(
-                                                height: 90,
-                                                width: 90,
-                                                decoration: BoxDecoration(
-                                                    border: Border.all(
-                                                        width: 1.0,
-                                                        color: Colors.white)),
-                                                child: CachedNetworkImage(
-                                                  useOldImageOnUrlChange: true,
-                                                  imageUrl:
-                                                      'https://www.mapquestapi.com/staticmap/v5/map?key=${(ApiKeys.keys..shuffle()).first}&center=${place.latitude},${place.longitude}&zoom=19&type=sat',
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(
-                                              width: 2,
-                                            ),
-                                            Expanded(
-                                              child: ListView(
-                                                padding: const EdgeInsets.only(
-                                                    top: 10.0),
-                                                children: [
-                                                  FutureBuilder(
-                                                    future: getAddress(
-                                                        place.latitude,
-                                                        place.longitude),
-                                                    builder:
-                                                        (context, snapshot1) {
-                                                      return Text(
-                                                          '${placemark.name ?? "Unknown"}, ${placemark.subLocality ?? ""}, ${placemark.locality ?? ""}, ${placemark.administrativeArea ?? ""}',
-                                                          maxLines: 2,
-                                                          overflow:
-                                                              TextOverflow.fade,
-                                                          style: const TextStyle(
-                                                              fontSize: 13,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .bold));
-                                                    },
-                                                  ),
-                                                  Text('Lat: ${place.latitude}',
-                                                      style: const TextStyle(
-                                                          fontSize: 13,
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                  Text(
-                                                      'Long: ${place.longitude}',
-                                                      style: const TextStyle(
-                                                          fontSize: 13,
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                  Text(
-                                                      'Accuracy: ${place.accuracy}',
-                                                      style: const TextStyle(
-                                                          fontSize: 13,
-                                                          fontWeight:
-                                                              FontWeight.bold)),
-                                                  Text(
-                                                      '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateFormat.jm().format(DateTime.now())} ${DateTime.now().timeZoneName}',
-                                                      style: const TextStyle(
-                                                          fontSize: 13,
-                                                          fontWeight:
-                                                              FontWeight.bold))
-                                                ],
-                                              ),
-                                            )
-                                          ],
-                                        )));
-                                // return Text(
-                                //     '${snapshot.data!.latitude} ${snapshot.data!.longitude} ${snapshot.data!.accuracy}');
-                              },
-                            ))
-                        : Container(
-                            color: Colors.black,
-                          ),
-                  ),
-                ),
-              ),
-              Positioned(
-                  bottom: 0,
+          return Consumer<CameraProvider>(
+              builder: (context, cameraProvider, child) {
+            return Stack(
+              children: [
+                Positioned(
+                  top: 0,
                   left: 0,
                   right: 0,
                   child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.transparent,
-                    ),
-                    child: SizedBox(
-                      height: MediaQuery.of(context).size.height * 0.16,
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.spaceAround,
+                    height: 50,
+                    decoration: const BoxDecoration(color: Colors.black),
+                    child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          // const SizedBox(
-                          //   child: Row(
-                          //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          //     children: [
-                          //       Chip(
-                          //         label: Text('Video',
-                          //             style: TextStyle(
-                          //                 fontWeight: FontWeight.bold)),
-                          //       ),
-                          //       Chip(
-                          //         label: Text('Photo',
-                          //             style: TextStyle(
-                          //                 fontWeight: FontWeight.bold)),
-                          //       ),
-                          //     ],
-                          //   ),
-                          // ),
-                          SizedBox(
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceAround,
-                              crossAxisAlignment: CrossAxisAlignment.center,
-                              children: [
-                                Center(
-                                  child: GestureDetector(
-                                    onTap: () => launchGallery(),
-                                    child: recentImage != null
-                                        ? Transform.scale(
-                                            scale: 1.2,
-                                            child: Container(
-                                              height: 40,
-                                              width: 40,
-                                              decoration: BoxDecoration(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          5.0),
-                                                  border: Border.all(
-                                                      width: 1.5,
-                                                      color: Colors.white),
-                                                  image: DecorationImage(
-                                                      fit: BoxFit.cover,
-                                                      image: MemoryImage(
-                                                          recentImage!))),
+                          Padding(
+                            padding: const EdgeInsets.only(left: 20.0),
+                            child: GestureDetector(
+                                onTap: () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                          content: Text('Clicked Flash')));
+                                },
+                                child: const SizedBox(
+                                  child: Icon(Icons.flash_off),
+                                )),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.only(right: 20.0),
+                            child: GestureDetector(
+                              onTap: () {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                        content: Text('Clicked Menu')));
+                              },
+                              child: const Icon(
+                                Icons.menu,
+                                color: Colors.white,
+                              ),
+                            ),
+                          )
+                        ]),
+                  ),
+                ),
+                Positioned.fill(
+                  top: 50,
+                  //bottom: 0,
+                  child: AspectRatio(
+                    aspectRatio: (cameraProvider.controller == null)
+                        ? 720 / 1280
+                        : cameraProvider.controller!.value.aspectRatio,
+                    child: Screenshot(
+                      controller: cameraProvider.screenshotcontroller,
+                      child: cameraProvider.controller != null
+                          ? CameraPreview(cameraProvider.controller!,
+                              child: FutureBuilder(
+                                future: _determinePosition(),
+                                builder: (context, snapshot) {
+                                  return Align(
+                                      alignment: Alignment.bottomLeft,
+                                      child: Container(
+                                          height: 100,
+                                          color: Colors.black54,
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.center,
+                                            children: [
+                                              Container(
+                                                padding:
+                                                    const EdgeInsets.all(5),
+                                                child: Container(
+                                                  height: 90,
+                                                  width: 90,
+                                                  decoration: BoxDecoration(
+                                                      border: Border.all(
+                                                          width: 1.0,
+                                                          color: Colors.white)),
+                                                  child: CachedNetworkImage(
+                                                    useOldImageOnUrlChange:
+                                                        true,
+                                                    imageUrl:
+                                                        'https://www.mapquestapi.com/staticmap/v5/map?key=${(ApiKeys.keys..shuffle()).first}&center=${place.latitude},${place.longitude}&zoom=19&type=sat',
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(
+                                                width: 2,
+                                              ),
+                                              Expanded(
+                                                child: ListView(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          top: 10.0),
+                                                  children: [
+                                                    FutureBuilder(
+                                                      future: getAddress(
+                                                          place.latitude,
+                                                          place.longitude),
+                                                      builder:
+                                                          (context, snapshot1) {
+                                                        return Text(
+                                                            '${placemark.name ?? "Unknown"}, ${placemark.subLocality ?? ""}, ${placemark.locality ?? ""}, ${placemark.administrativeArea ?? ""}',
+                                                            maxLines: 2,
+                                                            overflow:
+                                                                TextOverflow
+                                                                    .fade,
+                                                            style: const TextStyle(
+                                                                fontSize: 13,
+                                                                fontWeight:
+                                                                    FontWeight
+                                                                        .bold));
+                                                      },
+                                                    ),
+                                                    Text(
+                                                        'Lat: ${place.latitude}',
+                                                        style: const TextStyle(
+                                                            fontSize: 13,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold)),
+                                                    Text(
+                                                        'Long: ${place.longitude}',
+                                                        style: const TextStyle(
+                                                            fontSize: 13,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold)),
+                                                    Text(
+                                                        'Accuracy: ${place.accuracy}',
+                                                        style: const TextStyle(
+                                                            fontSize: 13,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold)),
+                                                    Text(
+                                                        '${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year} ${DateFormat.jm().format(DateTime.now())} ${DateTime.now().timeZoneName}',
+                                                        style: const TextStyle(
+                                                            fontSize: 13,
+                                                            fontWeight:
+                                                                FontWeight
+                                                                    .bold))
+                                                  ],
+                                                ),
+                                              )
+                                            ],
+                                          )));
+                                  // return Text(
+                                  //     '${snapshot.data!.latitude} ${snapshot.data!.longitude} ${snapshot.data!.accuracy}');
+                                },
+                              ))
+                          : Container(
+                              color: Colors.black,
+                            ),
+                    ),
+                  ),
+                ),
+                Positioned(
+                    bottom: 0,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      decoration: const BoxDecoration(
+                        color: Colors.transparent,
+                      ),
+                      child: SizedBox(
+                        height: MediaQuery.of(context).size.height * 0.16,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceAround,
+                          children: [
+                            // const SizedBox(
+                            //   child: Row(
+                            //     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            //     children: [
+                            //       Chip(
+                            //         label: Text('Video',
+                            //             style: TextStyle(
+                            //                 fontWeight: FontWeight.bold)),
+                            //       ),
+                            //       Chip(
+                            //         label: Text('Photo',
+                            //             style: TextStyle(
+                            //                 fontWeight: FontWeight.bold)),
+                            //       ),
+                            //     ],
+                            //   ),
+                            // ),
+                            SizedBox(
+                              child: Row(
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceAround,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Center(
+                                    child: GestureDetector(
+                                      onTap: () => launchGallery(),
+                                      child: cameraProvider.recentImage != null
+                                          ? Transform.scale(
+                                              scale: 1.2,
+                                              child: Container(
+                                                height: 40,
+                                                width: 40,
+                                                decoration: BoxDecoration(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            5.0),
+                                                    border: Border.all(
+                                                        width: 1.5,
+                                                        color: Colors.white),
+                                                    image: DecorationImage(
+                                                        fit: BoxFit.cover,
+                                                        image: MemoryImage(
+                                                            cameraProvider.recentImage!))),
+                                              ),
+                                            )
+                                          : const Icon(
+                                              Icons.image_rounded,
+                                              size: 40,
                                             ),
-                                          )
-                                        : const Icon(
-                                            Icons.image_rounded,
-                                            size: 40,
-                                          ),
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () {
-                                    takePicture();
-                                  },
-                                  child: Container(
-                                      decoration: BoxDecoration(
-                                          borderRadius:
-                                              BorderRadius.circular(100.0),
-                                          border: Border.all(
-                                              style: BorderStyle.solid,
-                                              width: 3,
-                                              color: Colors.white)),
-                                      child: const Icon(
-                                        Icons.circle,
-                                        size: 70,
-                                      )),
-                                ),
-                                Center(
-                                  child: GestureDetector(
-                                    onTap: () async {
-                                      if (controller!
-                                              .description.lensDirection ==
-                                          CameraLensDirection.front) {
-                                        await controller!
-                                            .setDescription(cameras[0]);
-                                      } else {
-                                        await controller!
-                                            .setDescription(cameras[1]);
-                                      }
-                                    },
-                                    child: const Icon(
-                                      Icons.flip_camera_ios_outlined,
-                                      size: 40,
                                     ),
                                   ),
-                                )
-                              ],
+                                  GestureDetector(
+                                    onTap: () {
+                                      cameraProvider.takePicture();
+                                    },
+                                    child: Container(
+                                        decoration: BoxDecoration(
+                                            borderRadius:
+                                                BorderRadius.circular(100.0),
+                                            border: Border.all(
+                                                style: BorderStyle.solid,
+                                                width: 3,
+                                                color: Colors.white)),
+                                        child: const Icon(
+                                          Icons.circle,
+                                          size: 70,
+                                        )),
+                                  ),
+                                  Center(
+                                    child: GestureDetector(
+                                      onTap: () async {
+                                        if (cameraProvider.controller!
+                                                .description.lensDirection ==
+                                            CameraLensDirection.front) {
+                                          await cameraProvider.controller!
+                                              .setDescription(cameras[0]);
+                                        } else {
+                                          await cameraProvider.controller!
+                                              .setDescription(cameras[1]);
+                                        }
+                                      },
+                                      child: const Icon(
+                                        Icons.flip_camera_ios_outlined,
+                                        size: 40,
+                                      ),
+                                    ),
+                                  )
+                                ],
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ))
-            ],
-          );
+                    ))
+              ],
+            );
+          });
         },
       ),
     ));

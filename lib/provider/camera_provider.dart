@@ -5,18 +5,19 @@ import 'package:image_gallery_saver/image_gallery_saver.dart';
 import 'package:screenshot/screenshot.dart';
 
 class CameraProvider extends ChangeNotifier {
-  late CameraController? controller;
+  CameraController? controller;
   late List<CameraDescription> cameras;
   bool flashlight = false;
   late ScreenshotController screenshotcontroller;
   Uint8List? recentImage;
   
-  void initializeCamera() async{
+  Future<void> initializeCamera() async{
     cameras = await availableCameras();
+    screenshotcontroller = ScreenshotController();
     controller = CameraController(cameras[0], ResolutionPreset.high,
         imageFormatGroup: ImageFormatGroup.jpeg);
-    controller!.initialize().then((value) {
-      
+    controller!.initialize().then((_) {
+      notifyListeners();
     }).catchError((Object e) {
       if (e is CameraException) {
         switch (e.code) {
@@ -29,6 +30,7 @@ class CameraProvider extends ChangeNotifier {
         }
       }
     });
+    notifyListeners();
   }
 
   @override
@@ -44,11 +46,12 @@ class CameraProvider extends ChangeNotifier {
     if (controller!.value.isTakingPicture) {
       return null;
     }
+    
     try {
       // await controller.setFlashMode(FlashMode.off);
-      screenshotcontroller.capture().then((value) {
+      screenshotcontroller.capture().then((value,) {
         ImageGallerySaver.saveImage(value!);
-          recentImage = value;
+        recentImage = value;
       });
       notifyListeners();
     } on CameraException catch (e) {
