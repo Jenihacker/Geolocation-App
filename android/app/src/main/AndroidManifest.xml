@@ -21,11 +21,12 @@
             <action android:name="android.support.customtabs.action.CustomTabsService" />
         </intent>
     </queries>
-    
+
     <application
         android:label="geolocation_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true">
         <activity
             android:name=".MainActivity"
             android:exported="true"

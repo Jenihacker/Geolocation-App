@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:geolocation_app/main.dart';
 import 'package:geolocation_app/provider/camera_provider.dart';
+import 'package:geolocation_app/provider/location_provider.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:flutter/cupertino.dart';
@@ -45,7 +46,9 @@ class _PermissionScreenState extends State<PermissionScreen> {
   }
 
   Future<bool> allPermited() async {
-    if (await Permission.camera.isGranted && await Permission.microphone.isGranted && await Permission.location.isGranted) {
+    if (await Permission.camera.isGranted &&
+        await Permission.microphone.isGranted &&
+        await Permission.location.isGranted) {
       return true;
     }
     return false;
@@ -86,14 +89,17 @@ class _PermissionScreenState extends State<PermissionScreen> {
               const SizedBox(height: 20),
               Expanded(
                 child: Consumer<CameraProvider>(
-                  builder: (context, cameraProvider, child) {
+                    builder: (context, cameraProvider, child) {
+                  return Consumer<LocationProvider>(
+                      builder: (context, locationProvider, locChild) {
                     return ListView(
                       children: [
                         ClipRRect(
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 5.0),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 5.0),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
@@ -136,18 +142,20 @@ class _PermissionScreenState extends State<PermissionScreen> {
                                     if (await Permission.camera
                                         .request()
                                         .isGranted) {
-                                      cameraProvider.initializeCamera();
                                       setState(() {
                                         isCameraGranted = true;
                                       });
+                                      if (isCameraGranted && isMicGranted) {
+                                        await cameraProvider.initializeCamera();
+                                      }
                                     } else if (await Permission
                                             .camera.status.isDenied ||
-                                        await Permission
-                                            .camera.status.isPermanentlyDenied) {
+                                        await Permission.camera.status
+                                            .isPermanentlyDenied) {
                                       openAppSettings();
                                     }
-                                    if(await allPermited()) {
-                                      Get.to(const HomeScreen());
+                                    if (await allPermited()) {
+                                      Get.off(() => const HomeScreen());
                                     }
                                   },
                                 ),
@@ -162,7 +170,8 @@ class _PermissionScreenState extends State<PermissionScreen> {
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 5.0),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 5.0),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
@@ -211,6 +220,9 @@ class _PermissionScreenState extends State<PermissionScreen> {
                                       setState(() {
                                         isMicGranted = true;
                                       });
+                                      if (isCameraGranted && isMicGranted) {
+                                        await cameraProvider.initializeCamera();
+                                      }
                                     } else if (await Permission
                                             .microphone.status.isDenied ||
                                         await Permission.microphone.status
@@ -218,7 +230,7 @@ class _PermissionScreenState extends State<PermissionScreen> {
                                       openAppSettings();
                                     }
                                     if (await allPermited()) {
-                                      Get.to(const HomeScreen());
+                                      Get.off(() => const HomeScreen());
                                     }
                                   },
                                 ),
@@ -233,7 +245,8 @@ class _PermissionScreenState extends State<PermissionScreen> {
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 3, sigmaY: 3),
                             child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 5.0),
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 5.0),
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
@@ -277,17 +290,19 @@ class _PermissionScreenState extends State<PermissionScreen> {
                                     if (await Permission.location
                                         .request()
                                         .isGranted) {
+                                      await locationProvider
+                                          .initializeLocation();
                                       setState(() {
                                         isLocationGranted = true;
                                       });
                                     } else if (await Permission
                                             .location.status.isDenied ||
-                                        await Permission
-                                            .location.status.isPermanentlyDenied) {
+                                        await Permission.location.status
+                                            .isPermanentlyDenied) {
                                       openAppSettings();
                                     }
                                     if (await allPermited()) {
-                                      Get.to(const HomeScreen());
+                                      Get.off(() => const HomeScreen());
                                     }
                                   },
                                 ),
@@ -297,8 +312,8 @@ class _PermissionScreenState extends State<PermissionScreen> {
                         )
                       ],
                     );
-                  }
-                ),
+                  });
+                }),
               )
             ],
           ),

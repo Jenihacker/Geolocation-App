@@ -1,8 +1,11 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:geolocation_app/main.dart';
-import 'package:geolocation_app/permission_screen.dart';
+import 'package:geolocation_app/screens/permission_screen.dart';
 import 'package:geolocation_app/provider/camera_provider.dart';
+import 'package:geolocation_app/provider/location_provider.dart';
 import 'package:get/get.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
@@ -21,11 +24,8 @@ class _SplashScreenState extends State<SplashScreen> {
   void initState() {
     super.initState();
     checkAccess();
-    if (isAllowed) {
-      
-    }
-    Timer(const Duration(milliseconds: 2500), () {
-      isAllowed ? Get.to(const HomeScreen()) : Get.to(const PermissionScreen());
+    Timer(const Duration(milliseconds: 1500), () {
+      isAllowed ? Get.off(() => const HomeScreen()) : Get.off(() => const PermissionScreen());
     });
   }
 
@@ -34,9 +34,8 @@ class _SplashScreenState extends State<SplashScreen> {
         await Permission.microphone.isGranted &&
         await Permission.location.isGranted) {
       isAllowed = true;
-      print(true);
-      // ignore: use_build_context_synchronously
       await Provider.of<CameraProvider>(context, listen: false).initializeCamera();
+      await Provider.of<LocationProvider>(context, listen: false).initializeLocation();
     }
   }
 

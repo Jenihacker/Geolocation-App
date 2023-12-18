@@ -1,19 +1,20 @@
+import 'dart:io';
 import 'dart:typed_data';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:image_gallery_saver/image_gallery_saver.dart';
+import 'package:gallery_saver/gallery_saver.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:screenshot/screenshot.dart';
 
 class CameraProvider extends ChangeNotifier {
   CameraController? controller;
   late List<CameraDescription> cameras;
   bool flashlight = false;
-  late ScreenshotController screenshotcontroller;
+  ScreenshotController screenshotcontroller = ScreenshotController();
   Uint8List? recentImage;
-  
-  Future<void> initializeCamera() async{
+
+  Future<void> initializeCamera() async {
     cameras = await availableCameras();
-    screenshotcontroller = ScreenshotController();
     controller = CameraController(cameras[0], ResolutionPreset.high,
         imageFormatGroup: ImageFormatGroup.jpeg);
     controller!.initialize().then((_) {
@@ -46,12 +47,19 @@ class CameraProvider extends ChangeNotifier {
     if (controller!.value.isTakingPicture) {
       return null;
     }
-    
+
     try {
       // await controller.setFlashMode(FlashMode.off);
-      screenshotcontroller.capture().then((value,) {
-        ImageGallerySaver.saveImage(value!);
+      screenshotcontroller.capture().then((
+        value,
+      ) async {
         recentImage = value;
+        notifyListeners();
+        final String dir = (await getApplicationDocumentsDirectory()).path;
+        final String fullPath = '$dir/${DateTime.now().millisecond}.jpg';
+        File capturedFile = File(fullPath);
+        await capturedFile.writeAsBytes(value!.buffer.asUint8List());
+        await GallerySaver.saveImage(capturedFile.path).then((value) {});
       });
       notifyListeners();
     } on CameraException catch (e) {
@@ -60,5 +68,4 @@ class CameraProvider extends ChangeNotifier {
       return null;
     }
   }
-  
 }
