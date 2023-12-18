@@ -92,7 +92,7 @@ class LocationProvider extends ChangeNotifier {
     // When we reach here, permissions are granted and we can
     // continue accessing the position of the device.
     place = await Geolocator.getCurrentPosition();
-    notifyListeners();
+    //notifyListeners();
     return place;
   }
 
